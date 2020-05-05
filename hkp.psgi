@@ -5,6 +5,10 @@ use Data::Dumper;
 use Crypt::OpenPGP::KeyRing;
 use URI;
 use URL::Encode;
+use lib 'lib';
+use HKP::Handler::GnuPG;
+
+my $handler = HKP::Handler::GnuPG->new();
 
 my $app = sub {
   my $env = shift;
@@ -17,6 +21,7 @@ my $app = sub {
   if ( $env->{REQUEST_METHOD} eq 'GET' ) {
     if ( $path_info eq '/pks/lookup' ) {
       # handler for `gpg --recv-keys 0xBA27A83C`
+      $handler->handle( { event => 'recv-keys', env => $env } );
     }
   } elsif ( $env->{REQUEST_METHOD} eq 'POST' ) {
     print "POST request received$/";
@@ -24,6 +29,7 @@ my $app = sub {
     my $max_len = 100_100_000;
     if ( $path_info eq '/pks/add' ) {
       print "path is /pks/add$/";
+
       if ( $env->{CONTENT_LENGTH} > $max_len ) {
 	my $error = "that file is too long!";
 	print "$error$/";
@@ -31,23 +37,7 @@ my $app = sub {
       }
 
       # handler for `gpg --send-keys 0xBA27A83C`
-      my $content;
-
-      my $len_read = $env->{'psgi.input'}->read($content, $max_len);
-
-      print "length of file is $len_read$/";
-      print "CONTENT_LENGTH = $env->{CONTENT_LENGTH}$/";
-
-      my $params = { @{URL::Encode::url_params_flat( $content )} };
-
-      my $ring = Crypt::OpenPGP::KeyRing->new(Data => $params->{keytext});
-
-      my $keyblock = $ring->find_keyblock_by_index(0);
-
-      print Data::Dumper::Dumper( $keyblock );
-
-#      print $content,$/;
-
+      $handler->handle( { event => 'send-keys', env => $env } );
     }
   }
 
