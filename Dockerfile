@@ -18,7 +18,7 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.c
 # Install some perl dependencies
 RUN apt-get update \
     && apt-get install -y make gcc unzip \
-                          cpanminus \
+                          cpanminus starman \
                           libplack-perl libclass-loader-perl libconvert-ascii-armour-perl \
                           libdigest-md2-perl libmath-prime-util-perl libfile-homedir-perl libsub-uplevel-perl \
                           libtest-exception-perl libdata-buffer-perl libfile-which-perl libtie-encryptedhash-perl \
@@ -38,3 +38,11 @@ RUN cpanm --local-lib=~/perl5 local::lib \
                     Crypt::Random \
                     Crypt::CAST5_PP \
                     Crypt::OpenPGP
+
+ENV WORKDIR=/opt/bq-pks
+
+RUN mkdir -p ${WORKDIR}
+
+COPY hkp.psgi ${WORKDIR}
+
+CMD starman --port 11371 ${WORKDIR}/hkp.psgi
