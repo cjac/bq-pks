@@ -18,7 +18,8 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.c
 # Install some perl dependencies
 RUN apt-get update \
     && apt-get install -y make gcc unzip \
-                          cpanminus starman \
+                          cpanminus liblocal-lib-perl starman \
+			  liburl-encode-perl \
                           libplack-perl libclass-loader-perl libconvert-ascii-armour-perl \
                           libdigest-md2-perl libmath-prime-util-perl libfile-homedir-perl libsub-uplevel-perl \
                           libtest-exception-perl libdata-buffer-perl libfile-which-perl libtie-encryptedhash-perl \
@@ -27,22 +28,37 @@ RUN apt-get update \
                           libcrypt-twofish-perl libcrypt-cbc-perl libcrypt-dsa-perl libcrypt-cast5-perl \
     && apt-get clean
 
+# set up the environment
+ENV PROJECT_NAME=bq-pks
+ENV WORKDIR=/opt/${PROJECT_NAME}
+
+# initialize local::lib under ${WORKDIR}
+RUN perl -I ${WORKDIR}/perl5/lib/perl5/ -Mlocal::lib=${WORKDIR}/perl5
+
+# pretend like we ran eval $(perl -I ${WORKDIR}/perl5/lib/perl5/ -Mlocal::lib=${WORKDIR}/perl5)
+ENV PATH="${WORKDIR}/bin${PATH:+:${PATH}}"
+ENV PERL5LIB="${WORKDIR}/lib/perl5${PERL5LIB:+:${PERL5LIB}}"
+ENV PERL_LOCAL_LIB_ROOT="${WORKDIR}${PERL_LOCAL_LIB_ROOT:+:${PERL_LOCAL_LIB_ROOT}}"
+ENV PERL_MB_OPT="--install_base \"${WORKDIR}\""
+ENV PERL_MM_OPT="INSTALL_BASE=${WORKDIR}"
+
 # Install some perl modules
-RUN cpanm --local-lib=~/perl5 local::lib \
-    && eval $(perl -I ~/perl5/lib/perl5/ -Mlocal::lib) \
-    ; cpanm install Math::Pari \
-                    Statistics::ChiSquare \
-                    Alt::Crypt::RSA::BigInt \
-                    Crypt::RIPEMD160 \
-                    Crypt::IDEA \
-                    Crypt::Random \
-                    Crypt::CAST5_PP \
-                    Crypt::OpenPGP
+RUN eval $(perl -I ${WORKDIR}/perl5/lib/perl5/ -Mlocal::lib=${WORKDIR}/perl5) \
+    && cpanm --local-lib=${WORKDIR}/perl5 \
+          install Math::Pari \
+                  Statistics::ChiSquare \
+                  Alt::Crypt::RSA::BigInt \
+                  Crypt::RIPEMD160 \
+                  Crypt::IDEA \
+                  Crypt::Random \
+                  Crypt::CAST5_PP \
+                  Crypt::OpenPGP
 
-ENV WORKDIR=/opt/bq-pks
+# Deploy HKP listener code
+COPY hkp.psgi ${WORKDIR}/
 
-RUN mkdir -p ${WORKDIR}
+# Deploy HKP Handler code
+COPY lib/HKP/Handler/GnuPG.pm ${WORKDIR}/lib/HKP/Handler/GnuPG.pm
 
-COPY hkp.psgi ${WORKDIR}
-
-CMD starman --port 11371 ${WORKDIR}/hkp.psgi
+# Start the HTTP Keyserver Protocol server
+CMD eval $(perl -I ${WORKDIR}/perl5/lib/perl5/ -Mlocal::lib=${WORKDIR}/perl5) && starman --port 11371 ${WORKDIR}/hkp.psgi
