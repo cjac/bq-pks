@@ -35,9 +35,11 @@ my $keyblock = $ring->find_keyblock_by_index($idx++);
 
 my $json_convert = sub {
   my($self) = @_;
-  my($package, $filename, $line) = caller;
-  print ("$package, $filename, $line$/");
-  Carp::cluck( "JSON encoder called" );
+  my($class) = ref $self;
+  $self->{__class__} = $class;
+#  my($package, $filename, $line) = caller;
+#  print ("$package, $filename, $line$/");
+#  Carp::cluck( "JSON encoder called" );
   #print STDERR Data::Dumper::Dumper( $self ) if $DEBUG;
   return { %{$self} };
 };
