@@ -1,0 +1,66 @@
+#!/usr/bin/perl -w
+use strict;
+
+our $VERSION = 0.01;
+our $DEBUG = 1;
+
+use lib 'lib';
+use Data::Dumper;
+use Crypt::OpenPGP::KeyRing;
+use JSON::XS;
+
+my $json = JSON::XS->new->convert_blessed(1)->utf8();
+
+use Getopt::Long;
+
+my $filename = '';
+my $help = 0;
+my $debug = $DEBUG;
+
+Getopt::Long::Configure ("bundling");
+GetOptions ( 'filename|f=s' => \$filename,
+             'help|?'     => \$help,
+             'debug|d'    => \$debug,
+           );
+
+die usage() unless $filename;
+
+my $ring = Crypt::OpenPGP::KeyRing->new( Filename => $filename );
+my $idx = 0;
+my $keyblock = $ring->find_keyblock_by_index($idx++);
+#  my( @blocks ) = $ring->blocks();
+
+#  print 'ring contains ' . scalar @blocks . ' block(s)' if $DEBUG;
+
+my $json_convert = sub {
+  my($self) = @_;
+  my($package, $filename, $line) = caller;
+  print ("$package, $filename, $line$/");
+  Carp::cluck( "JSON encoder called" );
+  #print STDERR Data::Dumper::Dumper( $self ) if $DEBUG;
+  return { %{$self} };
+};
+
+
+*Crypt::OpenPGP::Signature::SubPacket::TO_JSON = $json_convert;
+*Crypt::OpenPGP::Signature::TO_JSON            = $json_convert;
+*Crypt::OpenPGP::KeyBlock::TO_JSON             = $json_convert;
+*Crypt::OpenPGP::Key::Public::RSA::TO_JSON     = $json_convert;
+*Crypt::OpenPGP::Certificate::TO_JSON          = $json_convert;
+*Crypt::RSA::Key::Public::TO_JSON              = $json_convert;
+#*Crypt::OpenPGP::UserID::TO_JSON               = $json_convert;
+
+#print Data::Dumper::Dumper( $keyblock );
+
+my $keyblock_json;
+
+$keyblock_json = $json->encode( $keyblock );
+
+print Data::Dumper::Dumper( $keyblock_json );
+
+
+sub usage {
+  print STDERR ("$0 <--filename ...>\n");
+  return ();
+}
+
