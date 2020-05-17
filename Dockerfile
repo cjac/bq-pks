@@ -20,7 +20,7 @@ RUN apt-get update \
     && apt-get install -y make gcc unzip \
                           cpanminus liblocal-lib-perl starman liburl-encode-perl \
                           libdist-zilla-perl libdist-zilla-plugin-ourpkgversion-perl libdist-zilla-plugin-githubmeta-perl \
-                          libdata-buffer-perl \
+                          libdata-buffer-perl libcpanel-json-xs-perl \
                           libplack-perl libclass-loader-perl libconvert-ascii-armour-perl \
                           libdigest-md2-perl libmath-prime-util-perl libfile-homedir-perl libsub-uplevel-perl \
                           libtest-exception-perl libdata-buffer-perl libfile-which-perl libtie-encryptedhash-perl \

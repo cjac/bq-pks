@@ -5,3 +5,9 @@ https://metacpan.org/pod/REST::Client # REST client library
 https://metacpan.org/pod/Crypt::OpenPGP::KeyBlock # PGP object management
 
 https://davesteele.github.io/gpg/2014/09/20/anatomy-of-a-gpg-key/ 
+
+
+== Thanks ==
+
+Thanks to Grinnz on #perl for spotting JSON::XS bugs and recommending
+I use Cpanel::JSON::XS instead

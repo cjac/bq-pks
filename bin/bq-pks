@@ -8,8 +8,9 @@ use lib 'lib';
 use Data::Dumper;
 use Crypt::OpenPGP::KeyRing;
 use JSON::XS;
+use Cpanel::JSON::XS;
 
-my $json = JSON::XS->new->convert_blessed(1)->utf8();
+my $json = Cpanel::JSON::XS->new->convert_blessed(1)->utf8();
 
 use Getopt::Long;
 
@@ -42,19 +43,21 @@ my $json_convert = sub {
 };
 
 
-*Crypt::OpenPGP::Signature::SubPacket::TO_JSON = $json_convert;
-*Crypt::OpenPGP::Signature::TO_JSON            = $json_convert;
-*Crypt::OpenPGP::KeyBlock::TO_JSON             = $json_convert;
-*Crypt::OpenPGP::Key::Public::RSA::TO_JSON     = $json_convert;
-*Crypt::OpenPGP::Certificate::TO_JSON          = $json_convert;
-*Crypt::RSA::Key::Public::TO_JSON              = $json_convert;
-#*Crypt::OpenPGP::UserID::TO_JSON               = $json_convert;
-
-#print Data::Dumper::Dumper( $keyblock );
-
 my $keyblock_json;
 
-$keyblock_json = $json->encode( $keyblock );
+{
+  local *Crypt::OpenPGP::Signature::SubPacket::TO_JSON = $json_convert;
+  local *Crypt::OpenPGP::Signature::TO_JSON            = $json_convert;
+  local *Crypt::OpenPGP::KeyBlock::TO_JSON             = $json_convert;
+  local *Crypt::OpenPGP::Key::Public::RSA::TO_JSON     = $json_convert;
+  local *Crypt::OpenPGP::Certificate::TO_JSON          = $json_convert;
+  local *Crypt::RSA::Key::Public::TO_JSON              = $json_convert;
+  local *Crypt::OpenPGP::UserID::TO_JSON               = $json_convert;
+  #print Data::Dumper::Dumper( $keyblock );
+
+  $keyblock_json = $json->encode( $keyblock );
+
+}
 
 print Data::Dumper::Dumper( $keyblock_json );
 
